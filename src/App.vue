@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, reactive } from "vue";
+import { computed, onMounted, reactive, watch } from "vue";
 import { type Event, listen } from "@tauri-apps/api/event";
 import { message } from "@tauri-apps/api/dialog";
 import { Metadata, metadata } from "tauri-plugin-fs-extra-api";
@@ -11,9 +11,23 @@ import {
   type Quality,
 } from "./utils";
 
+let initialQuality = 55;
+const lsQuality = localStorage.getItem("quality");
+if (lsQuality !== null) {
+  const parsed = parseInt(lsQuality, 10);
+  if (
+    !Number.isNaN(parsed) &&
+    Number.isInteger(parsed) &&
+    parsed >= 40 &&
+    parsed <= 70
+  ) {
+    initialQuality = parsed;
+  }
+}
+
 const state = reactive({
   inputFile: "",
-  quality: 55,
+  quality: initialQuality,
   inputFileMeta: null as null | Metadata,
   estimatedOutputSize: computed((): string => {
     if (state.inputFileMeta === null) return "";
@@ -27,6 +41,13 @@ const state = reactive({
   transcodeProgress: null as null | number,
   isDragging: false,
 });
+
+watch(
+  () => state.quality,
+  (newValue) => {
+    localStorage.setItem("quality", newValue.toString());
+  }
+);
 
 const getFileNameFromEvent = (event: Event<unknown>) => {
   if (!Array.isArray(event.payload)) return;
